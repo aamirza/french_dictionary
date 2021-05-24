@@ -1,53 +1,9 @@
-from lxml import html
-from fake_useragent import UserAgent
 import os
 import pyperclip
-import requests
-import readline
 import sys
 import time
 
-
-def isNum(var):
-    try:
-        int(var)
-        return True
-    except ValueError:
-        return False
-
-
-def isSaying(catch):
-    sayings = ('au sens figuré', 'par extension', 'vieilli', 'familier',
-               'langage soutenu', "dans l'absolu", 'argot', 'armée',
-               'mot américain, armée', 'mot américain', 'péjorativement',
-               'populairement', 'ancien', 'Canada', 'Bélgique', 'mécanique',
-               'très familièrement', 'par plaisanterie', 'grossièrement')
-    if list(catch)[0] == '(' and list(catch)[-1] == ')':
-        return catch
-    for saying in sayings:
-        if saying in catch:
-            return str('('+catch+')')
-    return False
-
-
-def isReflexive(catch, word):
-    split = catch.split()
-    try:
-        if split[0] in ('se') and split[1] == word:
-            return True
-        elif list(word)[0] in ('a', 'e', 'i', 'o', 'u', 'h'):
-            split = catch.split("'")
-            if split[0] == "s" and split[1] == word:
-                return True
-    except IndexError:
-        pass
-    return False
-
-def isAlternative(word):
-    if list(word)[0] == ',':
-        return True
-    else:
-        return False
+from reverso import ReversoDictionary
 
 
 def extract_words(phrase):
@@ -68,8 +24,11 @@ def extract_words(phrase):
 
 
 def create_tsv(deck):
-    file_path = "/Users/aamir/Documents/code/python/anki_sentences/"
+    anki_sentences_folder = os.path.join(os.path.dirname(__file__), "anki_sentences")
+    if not os.path.exists(anki_sentences_folder):
+        os.makedirs(anki_sentences_folder)
     file_name = time.strftime('%Y%m%d_%H%M%S', time.localtime()) + ".tsv"
+    file_path = os.path.join(anki_sentences_folder, file_name)
     #[{sentence: lala, words: {word1: {word: word1, def: def1}, word2: {word: word2, def: deg2}}}]
     csv = ""
     for card in deck:
@@ -78,114 +37,20 @@ def create_tsv(deck):
         def1 = card['words']['word1']['definition'].replace('"', '""')
         word2 = card['words']['word2']['word'].replace('"', '""')
         def2 = card['words']['word2']['definition'].replace('"', '""')
-        #format: "sentence"\t"word1"\t"def1"\t""\t"word2"\t"def2"\t""\n
-        #csv += phrase+"\t"+word1+"\t"+def1+"\t\t"+word2+"\t"+def2+"\t\n"
         csv += '\"{}\",\"{}\",\"{}\",\"\",\"{}\",\"{}\",\"\"\n'.format(phrase, word1, def1, word2, def2)
-    f = open(file_path+file_name, "w")
-    f.write(csv)
-    f.close()
-    print("File exported!")
+
+    with open(file_path, "w+") as f:
+        f.write(csv)
+
+    print(f"File exported to {file_path}!")
 
 
-def convert_french_list_to_utf8(definition_list):
-    try:
-        return [word.encode("ISO-8859-1").decode('utf-8') for word in
-                definition_list]
-    except UnicodeDecodeError:
-        return definition_list
-
-
-def main(word, user_agent):
-    site = "http://mobile-dictionary.reverso.net/french-definition/"
-    site += word
-    site = site.encode('utf-8')
-    headers = {'User-Agent': user_agent}
-    page = requests.get(site, headers=headers)
-    tree = html.fromstring(page.content)
-    catch = tree.xpath('//span[@direction="target"]/text() | '
-                       '//span[@style="background-color:#000000"]/text() | ' 
-                       '//span[@style="color:#008000;"]/text() | ' 
-                       '//span[@style="color:#0000ff;"]/text()')
-
-    catch = convert_french_list_to_utf8(catch)
-    print(catch)  # needed for now for debugging
-    if isAlternative(catch[0]):
-        del catch[0]
-
-    numbered = False
-    definitions = {}
-
-    hold_num = 0
-    hold_saying = ''
-    reflexive = False
-    for definition in catch:
-        if isNum(definition) or isSaying(definition) or isReflexive(
-                definition, word):
-            numbered = True
-            if isReflexive(definition, word):
-                reflexive = True
-                reflexive_term = definition
-                continue
-            if isSaying(definition):
-                hold_saying = isSaying(definition)
-                continue
-            if int(definition) > hold_num:
-                hold_num = int(definition)
-                print(hold_num)
-            else:
-                numbered = False
-                continue
-        else:
-            if numbered:
-                if hold_saying and not reflexive:
-                    if not hold_num:
-                        hold_num += 1
-                    definitions[str(hold_num)] = hold_saying + " " + definition
-                    numbered = False
-                    hold_saying = ''
-                    continue
-                if reflexive:
-                    if not hold_num:
-                        hold_num += 1
-                    if not hold_saying:
-                        definitions[str(hold_num)] = "({}) {}".format(
-                            reflexive_term,
-                            definition)
-                    else:
-                        definitions[str(hold_num)] = "({}) {} {}".format(
-                            reflexive_term,
-                            hold_saying,
-                            definition)
-                        hold_saying = ''
-                    numbered = False
-                    continue
-                definitions[str(hold_num)] = definition
-                numbered = False
-                continue
-            else:
-                if not hold_num:
-                    hold_num += 1
-                    definitions[str(hold_num)] = definition
-                else:
-                    break
-
-    message = ''
-    print("\n" + word + "\n")
-    for x in range(1, len(definitions.keys()) + 1):
-        try:
-            message += '{} - {}\n'.format(x, definitions[str(x)])
-        except KeyError:
-            continue
-        # print('{} – {}'.format(x, definitions[str(x)]))
-    print(message)
-    pyperclip.copy(message)
-
-ua = UserAgent(verify_ssl=False)
-headers = ua.firefox
 collected = []
+reverso = ReversoDictionary()
 
 try:
-    main(sys.argv[1], headers)
+    word_to_search = sys.argv[1]
+    reverso.get_word_definitions(word_to_search, copy_to_clipboard=True)
 except IndexError:
     while True:
         try:
@@ -202,16 +67,16 @@ except IndexError:
                 }}
                 for index, search in enumerate(to_search, 1):
                     try:
-                        main(search, headers)
+                        definition = reverso.get_word_definitions(search)
                     except:
                         print("There was an error.")
                         if collected:
                             print("I will export your CSV")
-                    card['words']['word'+str(index)]['word'] = search
-                    card['words']['word'+str(index)]['definition'] = pyperclip.paste()
+                        definition = ""
+                    card['words']['word' + str(index)]['word'] = search
+                    card['words']['word' + str(index)]['definition'] = definition
                 collected.append(card)
                 continue
-            word = word.replace(' ', '')
             if word.upper() in ('QUIT', 'EXIT', 'DONE'):
                 if collected:
                     create_tsv(collected)
@@ -219,10 +84,8 @@ except IndexError:
             elif word.upper() == 'CLEAR':
                 os.system('clear')
                 continue
-            main(word, headers)
+            reverso.get_word_definitions(word, copy_to_clipboard=True)
         except Exception as e:
+            # TODO: Create timeout error
             print(f"{repr(e)}: {e}")
             continue
-            #if collected:
-            #    print("Saving what you have...")
-            #    create_tsv(collected)

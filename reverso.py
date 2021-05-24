@@ -52,6 +52,14 @@ def isAlternative(word):
         return False
 
 
+def convert_french_list_to_utf8(definition_list):
+    try:
+        return [word.encode("ISO-8859-1").decode('utf-8') for word in
+                definition_list]
+    except UnicodeDecodeError:
+        return definition_list
+
+
 def get_dictionary_definition(word, definition_list, definitions, indexes, sayings, alternatives):
     print(definition_list)  # TODO: convert to logging
     # TODO: Use new parameters instead of inference
@@ -122,7 +130,7 @@ class ReversoDictionary:
     base_url = "http://mobile-dictionary.reverso.net/french-definition/"
 
     def __init__(self):
-        self.headers = {'User-Agent': UserAgent(veryify_ssl=False).firefox}  # Needed to make requests
+        self.headers = {'User-Agent': UserAgent(verify_ssl=False).firefox}  # Needed to make requests
 
     def _word_url(self, word):
         """The URL for the specific word"""
@@ -140,11 +148,12 @@ class ReversoDictionary:
         all_xpaths = f'{definition_xpath} | {saying_xpath} | {index_numbers_xpath} | {alternative_words_xpath}'
 
         page_html = self._get_definition_page_html(word)
+        # TODO: Convert all list to UTF-8
         definitions = page_html.xpath(definition_xpath)
         sayings = page_html.xpath(saying_xpath)
         index_numbers = page_html.xpath(index_numbers_xpath)
         alternative_words = page_html.xpath(alternative_words_xpath)
-        definition_list = page_html.xpath(all_xpaths)
+        definition_list = convert_french_list_to_utf8(page_html.xpath(all_xpaths))
 
         return get_dictionary_definition(word, definition_list, definitions, index_numbers, sayings, alternative_words)
 
@@ -164,3 +173,4 @@ class ReversoDictionary:
 
         if copy_to_clipboard:
             pyperclip.copy(message)
+        return message
