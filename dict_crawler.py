@@ -1,5 +1,4 @@
 import os
-import pyperclip
 import sys
 import time
 
@@ -59,7 +58,7 @@ except IndexError:
                 # This means that this is a sentence we want to parse
                 word = word[word.find('sss')+4:]  # Get rid of the sss
                 sentence, to_search = extract_words(word) # it works!
-                print(to_search)
+                #print(to_search)
                 #[{sentence: lala, words: {word1: def1, word2, deg2}}]
                 card = {'sentence': sentence, 'words': {
                 'word1': {'word': "", 'definition': ""},

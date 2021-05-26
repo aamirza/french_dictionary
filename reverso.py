@@ -61,7 +61,7 @@ def convert_french_list_to_utf8(definition_list):
 
 
 def get_dictionary_definition(word, definition_list, definitions, indexes, sayings, alternatives):
-    print(definition_list)  # TODO: convert to logging
+    #print(definition_list)  # TODO: convert to logging
     # TODO: Use new parameters instead of inference
 
     if isAlternative(definition_list[0]):
@@ -85,7 +85,7 @@ def get_dictionary_definition(word, definition_list, definitions, indexes, sayin
                 continue
             if int(definition) > hold_num:
                 hold_num = int(definition)
-                print(hold_num)
+                #print(hold_num)  # TODO: Convert to logging.
             else:
                 numbered = False
                 continue
@@ -131,6 +131,7 @@ class ReversoDictionary:
 
     def __init__(self):
         self.headers = {'User-Agent': UserAgent(verify_ssl=False).firefox}  # Needed to make requests
+        print(self.copyright_warning())
 
     def _word_url(self, word):
         """The URL for the specific word"""
@@ -174,3 +175,11 @@ class ReversoDictionary:
         if copy_to_clipboard:
             pyperclip.copy(message)
         return message
+    
+    @staticmethod
+    def copyright_warning():
+        return "WARNING: This program is purely for demonstration and not intended for distribu-\n" \
+               "tion. Per Reverso's Condition of Use, you must use Reverso's original site on a\n" \
+               "regular web browser. After you are done using this app, please uninstall and re-\n" \
+               "move from your system.\n\n" \
+               "Reverso Conditions of Use: https://www.reverso.net/disclaimer.aspx?lang=EN \n"
