@@ -3,10 +3,15 @@ This is the class to handle communicating with the Reverso website.
 """
 
 # TODO: Write a comment for each function
+import logging
+
 import pyperclip
 import requests
 from fake_useragent import UserAgent
 from lxml import html
+
+
+logging.basicConfig(level=logging.WARNING)
 
 
 def isNum(var):
@@ -61,7 +66,7 @@ def convert_french_list_to_utf8(definition_list):
 
 
 def get_dictionary_definition(word, definition_list, definitions, indexes, sayings, alternatives):
-    #print(definition_list)  # TODO: convert to logging
+    logging.debug(f"Definition list from Reverso: {definition_list}")
     # TODO: Use new parameters instead of inference
 
     if isAlternative(definition_list[0]):
@@ -85,7 +90,7 @@ def get_dictionary_definition(word, definition_list, definitions, indexes, sayin
                 continue
             if int(definition) > hold_num:
                 hold_num = int(definition)
-                #print(hold_num)  # TODO: Convert to logging.
+                logging.debug(f"Definition #{hold_num} found")
             else:
                 numbered = False
                 continue
@@ -162,7 +167,7 @@ class ReversoDictionary:
         definitions = self._get_word_definition_list(word)
 
         message = ''
-        print("\n" + word + "\n")  # TODO: convert to logging
+        print("\n" + word + "\n")
 
         starting_index = 1
         for index in range(starting_index, len(definitions.keys()) + 1):
@@ -170,7 +175,7 @@ class ReversoDictionary:
                 message += '{} - {}\n'.format(index, definitions[str(index)])
             except KeyError:
                 continue
-        print(message)  # TODO: Convert to logging
+        print(message)
 
         if copy_to_clipboard:
             pyperclip.copy(message)
