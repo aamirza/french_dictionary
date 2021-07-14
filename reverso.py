@@ -4,6 +4,7 @@ This is the class to handle communicating with the Reverso website.
 
 # TODO: Write a comment for each function
 import logging
+import urllib
 
 import pyperclip
 import requests
@@ -132,7 +133,7 @@ def get_dictionary_definition(word, definition_list, definitions, indexes, sayin
 
 
 class ReversoDictionary:
-    base_url = "http://mobile-dictionary.reverso.net/french-definition/"
+    base_url = "https://mobile-dictionary.reverso.net/french-definition/"
 
     def __init__(self):
         self.headers = {'User-Agent': UserAgent(verify_ssl=False).firefox}  # Needed to make requests
@@ -140,7 +141,7 @@ class ReversoDictionary:
 
     def _word_url(self, word):
         """The URL for the specific word"""
-        return self.base_url + word
+        return urllib.parse.quote(self.base_url + word, safe=":/")
 
     def _get_definition_page_html(self, word):
         page = requests.get(self._word_url(word), headers=self.headers)
