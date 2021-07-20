@@ -12,7 +12,7 @@ from fake_useragent import UserAgent
 from lxml import html
 
 
-logging.basicConfig(level=logging.WARNING)
+logging.basicConfig(level=logging.DEBUG)
 
 
 def isAlternative(word):
@@ -32,6 +32,10 @@ def convert_french_list_to_utf8(definition_list):
 
 def get_dictionary_definition(word, definition_list, definitions, indices, sayings, reflexives):
     logging.debug(f"Definition list from Reverso: {definition_list}")
+    logging.debug(f"Definitions: {definitions}")
+    logging.debug(f"Indices: {indices}")
+    logging.debug(f"Sayings: {sayings}")
+    logging.debug(f"Reflexives: {reflexives}")
 
     if isAlternative(definition_list[0]):
         definition_list = definition_list[1:]
@@ -97,11 +101,10 @@ class ReversoDictionary:
         all_xpaths = f'{definition_xpath} | {saying_xpath} | {index_numbers_xpath} | {alternative_words_xpath}'
 
         page_html = self._get_definition_page_html(word)
-        # TODO: Convert all list to UTF-8
-        definitions = page_html.xpath(definition_xpath)
-        sayings = page_html.xpath(saying_xpath)
-        index_numbers = page_html.xpath(index_numbers_xpath)
-        alternative_words = page_html.xpath(alternative_words_xpath)
+        definitions = convert_french_list_to_utf8(page_html.xpath(definition_xpath))
+        sayings = convert_french_list_to_utf8(page_html.xpath(saying_xpath))
+        index_numbers = convert_french_list_to_utf8(page_html.xpath(index_numbers_xpath))
+        alternative_words = convert_french_list_to_utf8(page_html.xpath(alternative_words_xpath))
         definition_list = convert_french_list_to_utf8(page_html.xpath(all_xpaths))
 
         return get_dictionary_definition(word, definition_list, definitions, index_numbers, sayings, alternative_words)
@@ -115,7 +118,7 @@ class ReversoDictionary:
         starting_index = 1
         for index in range(starting_index, len(definitions.keys()) + 1):
             try:
-                message += '{} - {}\n'.format(index, definitions[str(index)])
+                message += '{} - {}\n'.format(index, definitions[index])
             except KeyError:
                 continue
         print(message)
