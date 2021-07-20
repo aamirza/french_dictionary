@@ -15,42 +15,6 @@ from lxml import html
 logging.basicConfig(level=logging.WARNING)
 
 
-def isNum(var):
-    try:
-        int(var)
-        return True
-    except ValueError:
-        return False
-
-
-def isSaying(definition):
-    sayings = ('au sens figuré', 'par extension', 'vieilli', 'familier',
-               'langage soutenu', "dans l'absolu", 'argot', 'armée',
-               'mot américain, armée', 'mot américain', 'péjorativement',
-               'populairement', 'ancien', 'Canada', 'Bélgique', 'mécanique',
-               'très familièrement', 'par plaisanterie', 'grossièrement')
-    if list(definition)[0] == '(' and list(definition)[-1] == ')':
-        return definition
-    for saying in sayings:
-        if saying in definition:
-            return str('(' + definition + ')')
-    return False
-
-
-def isReflexive(definition, word):
-    split = definition.split()
-    try:
-        if split[0] in ('se') and split[1] == word:
-            return True
-        elif list(word)[0] in ('a', 'e', 'i', 'o', 'u', 'h'):
-            split = definition.split("'")
-            if split[0] == "s" and split[1] == word:
-                return True
-    except IndexError:
-        pass
-    return False
-
-
 def isAlternative(word):
     if list(word)[0] == ',':
         return True
@@ -66,70 +30,48 @@ def convert_french_list_to_utf8(definition_list):
         return definition_list
 
 
-def get_dictionary_definition(word, definition_list, definitions, indexes, sayings, alternatives):
+def get_dictionary_definition(word, definition_list, definitions, indices, sayings, reflexives):
     logging.debug(f"Definition list from Reverso: {definition_list}")
-    # TODO: Use new parameters instead of inference
 
     if isAlternative(definition_list[0]):
         definition_list = definition_list[1:]
 
-    numbered = False
-    definitions = {}
+    # get the number of definitions
+    indices = list(map(int, indices))  # convert indices to ints
+    if len(indices) > 0:
+        max_index = max(indices)
+    else:
+        # If there are no definition numbers, then there's likely only one definition
+        max_index = 1
 
-    hold_num = 0
-    hold_saying = ''
-    reflexive = False
+    # cycle through the definitions
+    hold_index = 1  # this the definition number.
+    held_saying = None  # If the definition is slang, idiom etc.
+    reflexive = False  # If the definition is of the reflexive
+    dictionary = {}
     for definition in definition_list:
-        if isNum(definition) or isSaying(definition) or isReflexive(definition, word):
-            numbered = True
-            if isReflexive(definition, word):
-                reflexive = True
-                reflexive_term = definition
-                continue
-            if isSaying(definition):
-                hold_saying = isSaying(definition)
-                continue
-            if int(definition) > hold_num:
-                hold_num = int(definition)
-                logging.debug(f"Definition #{hold_num} found")
-            else:
-                numbered = False
-                continue
-        else:
-            if numbered:
-                if hold_saying and not reflexive:
-                    if not hold_num:
-                        hold_num += 1
-                    definitions[str(hold_num)] = hold_saying + " " + definition
-                    numbered = False
-                    hold_saying = ''
-                    continue
-                if reflexive:
-                    if not hold_num:
-                        hold_num += 1
-                    if not hold_saying:
-                        definitions[str(hold_num)] = "({}) {}".format(
-                            reflexive_term,
-                            definition)
-                    else:
-                        definitions[str(hold_num)] = "({}) {} {}".format(
-                            reflexive_term,
-                            hold_saying,
-                            definition)
-                        hold_saying = ''
-                    numbered = False
-                    continue
-                definitions[str(hold_num)] = definition
-                numbered = False
-                continue
-            else:
-                if not hold_num:
-                    hold_num += 1
-                    definitions[str(hold_num)] = definition
-                else:
-                    break
+        if definition.startswith('s') and definition in reflexives:  # French reflexive verbs start with s
+            reflexive = True
+            reflexive_verb = definition
+        elif definition in sayings:
+            # Sometimes Reverso has parenthesis around the sayings, other times not. For consistency, we'll add it
+            # ourselves
+            definition.replace("(", "")
+            definition.replace(")", "")
+            held_saying = definition
+        elif definition in definitions:
+            dictionary[hold_index] = ''
+            if reflexive:
+                dictionary[hold_index] += f"({reflexive_verb}) "
+            if held_saying:
+                dictionary[hold_index] += f"({held_saying}) "
+                held_saying = None
+            dictionary[hold_index] += definition
 
-    return definitions
+            hold_index += 1
+            if hold_index > max_index:
+                break
+    return dictionary
 
 
 class ReversoDictionary:

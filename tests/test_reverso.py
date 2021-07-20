@@ -18,6 +18,6 @@ class TestReverso:
     @pytest.mark.slow
     def test_retrieves_definition(self):
         definitions = self.reverso._get_word_definition_list('danser')
-        assert definitions == {'1': "exécuter une danse, bouger son corps en suivant un rythme musical",
-                               '2': "onduler, se mouvoir en parlant de choses, d'animaux ou d'éléments naturels",
-                               '3': "(se danser) être dansé"}
+        assert definitions == {1: "exécuter une danse, bouger son corps en suivant un rythme musical",
+                               2: "onduler, se mouvoir en parlant de choses, d'animaux ou d'éléments naturels",
+                               3: "(se danser) être dansé"}
