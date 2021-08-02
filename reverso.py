@@ -16,6 +16,7 @@ logging.basicConfig(level=logging.DEBUG)
 
 
 def isAlternative(word):
+    """Alternative spellings/words will have this as their first 'definition'"""
     if list(word)[0] == ',':
         return True
     else:
@@ -23,6 +24,7 @@ def isAlternative(word):
 
 
 def convert_french_list_to_utf8(definition_list):
+    """Fixes some encoding issues."""
     try:
         return [word.encode("ISO-8859-1").decode('utf-8') for word in
                 definition_list]
@@ -31,6 +33,18 @@ def convert_french_list_to_utf8(definition_list):
 
 
 def get_dictionary_definition(word, definition_list, definitions, indices, sayings, reflexives):
+    """Take scraped data in lists as input, and return the definitions (stored in a dict)
+
+    @:param
+    :definition_list: The entirity of the scraped data
+    :definitions: The definitions of the word that were scraped
+    :indices: The numbered index for each definition (e.g. '1', '2')
+    :sayings: Whether the definition is an idiom, slang, etc.
+    :reflexives: Whether the verb has a reflexive version e.g. s'être or se souvenir
+
+    @:returns
+    (dict) With numbered indices as a key and a definition as a value.
+    """
     logging.debug(f"Definition list from Reverso: {definition_list}")
     logging.debug(f"Definitions: {definitions}")
     logging.debug(f"Indices: {indices}")
